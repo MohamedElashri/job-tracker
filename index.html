@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Tracker</title>
+<style>
+/* ── RESET & ROOT ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d0d10;
+  --surface:   #18181c;
+  --surface2:  #1f1f25;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #e2e2e8;
+  --muted:     #6b6b7e;
+  --accent:    #7c6af7;
+  --accent-hi: #a899ff;
+  --green:     #22c55e;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --cyan:      #06b6d4;
+  --pink:      #ec4899;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'DM Sans', 'Outfit', system-ui, sans-serif;
+  --radius:    10px;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+body { padding: 20px 24px 40px; }
+
+/* ── SYSTEM BAR ──────────────────────────────── */
+#sys-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+#sys-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+#sys-dot.ok  { background: var(--green); }
+#sys-dot.err { background: var(--amber); }
+
+#sys-blockid {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0.5;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── TOPBAR ──────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.brand { display: flex; flex-direction: column; gap: 2px; }
+
+.brand-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand-title {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+/* ── BUTTONS ─────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: none; border-radius: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s, transform 0.1s, opacity 0.14s;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #8f7fff; }
+
+.btn-ghost {
+  background: transparent;
+  border: 0.5px solid var(--border2);
+  color: var(--muted);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+.btn-danger { background: transparent; border: 0.5px solid var(--border2); color: var(--red); }
+.btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+.btn-sm { padding: 4px 10px; font-size: 11.5px; border-radius: 6px; }
+
+/* ── STAT CARDS ──────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-top: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+
+.stat-total    { border-top-color: var(--muted);  }
+.stat-applied  { border-top-color: var(--cyan);   }
+.stat-interview{ border-top-color: var(--amber);  }
+.stat-offer    { border-top-color: var(--green);  }
+.stat-rejected { border-top-color: var(--red);    }
+
+.stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.stat-val {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.stat-applied  .stat-val { color: var(--cyan);  }
+.stat-interview .stat-val { color: var(--amber); }
+.stat-offer    .stat-val { color: var(--green); }
+.stat-rejected .stat-val { color: var(--red);   }
+
+/* ── TOOLBAR ─────────────────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-wrap {
+  flex: 1; min-width: 160px;
+  position: relative;
+}
+
+.search-wrap svg {
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.search-wrap input {
+  width: 100%;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 7px 10px 7px 32px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-wrap input:focus { border-color: var(--accent); }
+
+.toolbar select {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.toolbar select:focus { border-color: var(--accent); }
+.toolbar select option { background: var(--surface2); }
+
+/* ── TABLE ───────────────────────────────────── */
+.table-wrap {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+
+thead tr { border-bottom: 0.5px solid var(--border2); }
+
+th {
+  padding: 11px 14px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th:hover { color: var(--text); }
+th.sorted { color: var(--accent-hi); }
+th .arrow { margin-left: 3px; opacity: 0.5; font-size: 9px; }
+th.sorted .arrow { opacity: 1; }
+
+td {
+  padding: 11px 14px;
+  border-bottom: 0.5px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr { transition: background 0.1s; cursor: pointer; }
+tbody tr:hover { background: var(--surface2); }
+
+/* ── COMPANY CELL ────────────────────────────── */
+.co-cell { display: flex; align-items: center; gap: 9px; }
+
+.co-logo {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 700;
+  color: var(--accent-hi);
+  flex-shrink: 0;
+}
+.co-name { font-weight: 600; color: var(--text); }
+.co-loc  { font-size: 11px; color: var(--muted); }
+
+/* ── BADGES ──────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.badge-saved      { background: rgba(108,99,255,.1);  color: var(--accent-hi); }
+.badge-applied    { background: rgba(6,182,212,.1);   color: var(--cyan);  }
+.badge-interview  { background: rgba(245,158,11,.1);  color: var(--amber); }
+.badge-offer      { background: rgba(34,197,94,.1);   color: var(--green); }
+.badge-rejected   { background: rgba(239,68,68,.1);   color: var(--red);   }
+.badge-ghosted    { background: rgba(107,107,126,.12); color: var(--muted); }
+
+.prio-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.p-high   { background: var(--red);   }
+.p-medium { background: var(--amber); }
+.p-low    { background: var(--muted); }
+
+/* ── TAGS ────────────────────────────────────── */
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag {
+  background: rgba(124,106,247,.1);
+  color: var(--accent-hi);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* ── EMPTY STATE ─────────────────────────────── */
+#empty {
+  text-align: center;
+  padding: 54px 20px;
+  color: var(--muted);
+}
+#empty p { font-size: 14px; margin-top: 8px; }
+
+/* ── MODAL ───────────────────────────────────── */
+#modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 900;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s;
+}
+#modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--surface);
+  border: 0.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 26px 28px;
+  width: 100%; max-width: 500px;
+  max-height: 92vh; overflow-y: auto;
+  transform: translateY(18px);
+  transition: transform 0.18s;
+}
+#modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+  font-size: 17px; font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.form-row { margin-bottom: 14px; }
+
+.form-lbl {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus { border-color: var(--accent); }
+.form-textarea { resize: vertical; min-height: 72px; line-height: 1.6; }
+.form-select option { background: var(--surface2); }
+
+.modal-actions {
+  display: flex; gap: 9px; justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* ── TOAST ───────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 22px; right: 22px;
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-left: 3px solid var(--green);
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-size: 13px; color: var(--text);
+  transform: translateY(70px); opacity: 0;
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 999; pointer-events: none;
+  max-width: 280px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── SCROLLBAR ───────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+@media (max-width: 580px) {
+  body { padding: 14px; }
+  .form-grid { grid-template-columns: 1fr; }
+  td:nth-child(4), th:nth-child(4),
+  td:nth-child(5), th:nth-child(5),
+  td:nth-child(6), th:nth-child(6) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── SYSTEM / CONNECTION BAR ── -->
+<div id="sys-bar">
+  <div id="sys-dot"></div>
+  <span id="sys-msg">Initializing…</span>
+  <span id="sys-blockid"></span>
+</div>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-label">&#9632; siyuan widget</div>
+    <div class="brand-title">Job Tracker</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost btn-sm" id="btn-export">&#8595; CSV</button>
+    <button class="btn btn-primary" id="btn-add">+ Add Job</button>
+  </div>
+</div>
+
+<!-- ── STATS ── -->
+<div class="stats">
+  <div class="stat stat-total">
+    <div class="stat-lbl">Total</div>
+    <div class="stat-val" id="st-total">0</div>
+  </div>
+  <div class="stat stat-applied">
+    <div class="stat-lbl">Applied</div>
+    <div class="stat-val" id="st-applied">0</div>
+  </div>
+  <div class="stat stat-interview">
+    <div class="stat-lbl">Interview</div>
+    <div class="stat-val" id="st-interview">0</div>
+  </div>
+  <div class="stat stat-offer">
+    <div class="stat-lbl">Offer</div>
+    <div class="stat-val" id="st-offer">0</div>
+  </div>
+  <div class="stat stat-rejected">
+    <div class="stat-lbl">Rejected</div>
+    <div class="stat-val" id="st-rejected">0</div>
+  </div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="search" placeholder="Search company, role, tags…" />
+  </div>
+  <select id="f-status">
+    <option value="">All statuses</option>
+    <option value="saved">Saved</option>
+    <option value="applied">Applied</option>
+    <option value="interview">Interview</option>
+    <option value="offer">Offer</option>
+    <option value="rejected">Rejected</option>
+    <option value="ghosted">Ghosted</option>
+  </select>
+  <select id="f-priority">
+    <option value="">All priorities</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+</div>
+
+<!-- ── TABLE ── -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-col="company">Company <span class="arrow">&#8597;</span></th>
+        <th data-col="role">Role <span class="arrow">&#8597;</span></th>
+        <th data-col="status">Status <span class="arrow">&#8597;</span></th>
+        <th data-col="priority">Priority <span class="arrow">&#8597;</span></th>
+        <th data-col="applied_date">Date <span class="arrow">&#8597;</span></th>
+        <th>Tags</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty" style="display:none">
+    <p style="font-size:28px;opacity:.3">&#128084;</p>
+    <p>No applications yet — add your first job above.</p>
+  </div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Add Application</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-lbl">Company *</label>
+        <input class="form-input" id="f-company" placeholder="e.g. Stripe" />
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Role *</label>
+        <input class="form-input" id="f-role" placeholder="e.g. Software Engineer" />
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-lbl">Location</label>
+        <input class="form-input" id="f-loc" placeholder="e.g. Remote, NYC" />
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Salary Range</label>
+        <input class="form-input" id="f-salary" placeholder="e.g. $120k–$150k" />
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-lbl">Status</label>
+        <select class="form-select" id="f-m-status">
+          <option value="saved">Saved</option>
+          <option value="applied" selected>Applied</option>
+          <option value="interview">Interview</option>
+          <option value="offer">Offer</option>
+          <option value="rejected">Rejected</option>
+          <option value="ghosted">Ghosted</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Priority</label>
+        <select class="form-select" id="f-m-priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label class="form-lbl">Date Applied</label>
+        <input class="form-input" type="date" id="f-date" />
+      </div>
+      <div class="form-row">
+        <label class="form-lbl">Next Follow-up</label>
+        <input class="form-input" type="date" id="f-followup" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-lbl">Job URL</label>
+      <input class="form-input" id="f-url" placeholder="https://…" />
+    </div>
+    <div class="form-row">
+      <label class="form-lbl">Tags (comma-separated)</label>
+      <input class="form-input" id="f-tags" placeholder="e.g. backend, fintech, startup" />
+    </div>
+    <div class="form-row">
+      <label class="form-lbl">Notes</label>
+      <textarea class="form-textarea" id="f-notes" placeholder="Recruiter name, impressions, referral…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-cancel">Cancel</button>
+      <button class="btn btn-primary" id="btn-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG  — edit these if needed
+// ══════════════════════════════════════════════
+const SIYUAN_API   = '';          // leave empty: auto-detected from window.location.origin
+const SIYUAN_TOKEN = '';          // set if your instance requires a token (Settings → About)
+const ATTR_KEY     = 'custom-job-tracker-data'; // SiYuan custom attr prefix must start with "custom-"
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let jobs      = [];
+let editingId = null;
+let sortCol   = 'applied_date';
+let sortAsc   = false;
+let hostBlockId = null;   // SiYuan block ID of the widget block
+
+console.debug('[JobTracker] init start');
+
+// ══════════════════════════════════════════════
+// BLOCK-ID DISCOVERY
+// The widget runs inside an <iframe> that SiYuan embeds same-origin at
+// http://127.0.0.1:6806/widgets/job-tracker/index.html
+// Because parent and iframe share the same origin, self.frameElement gives
+// us direct DOM access to the <iframe> element in the parent document.
+// Walking up from there we find the widget block wrapper which carries
+// the data-node-id attribute used by all SiYuan block APIs.
+// ══════════════════════════════════════════════
+function discoverBlockId() {
+  try {
+    // self.frameElement is only accessible when same-origin
+    const fe = self.frameElement;
+    if (!fe) {
+      console.debug('[JobTracker] self.frameElement is null — running standalone');
+      return null;
+    }
+    // Walk up the parent DOM to find the protyle widget block node
+    // SiYuan wraps widgets in: div[data-node-id][data-type="NodeWidget"]
+    let el = fe;
+    while (el) {
+      const nodeId = el.getAttribute && el.getAttribute('data-node-id');
+      if (nodeId) {
+        console.debug('[JobTracker] found block id via frameElement:', nodeId);
+        return nodeId;
+      }
+      el = el.parentElement;
+    }
+    console.debug('[JobTracker] frameElement accessible but no data-node-id found in ancestors');
+  } catch (e) {
+    // cross-origin: can't access frameElement
+    console.debug('[JobTracker] frameElement access denied (cross-origin or standalone):', e.message);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════
+// SIYUAN API HELPERS
+// ══════════════════════════════════════════════
+function apiBase() {
+  if (SIYUAN_API) return SIYUAN_API;
+  // When running inside SiYuan the origin IS the kernel, e.g. http://127.0.0.1:6806
+  if (window.location.port === '6806' || window.location.hostname === '127.0.0.1') {
+    return window.location.origin;
+  }
+  return 'http://127.0.0.1:6806';
+}
+
+async function syPost(path, body = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (SIYUAN_TOKEN) headers['Authorization'] = `Token ${SIYUAN_TOKEN}`;
+  const res = await fetch(apiBase() + path, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} on ${path}`);
+  const json = await res.json();
+  if (json.code !== 0) throw new Error(`SiYuan error ${json.code}: ${json.msg}`);
+  return json.data;
+}
+
+async function checkConnection() {
+  try {
+    await syPost('/api/system/currentTime');
+    return true;
+  } catch (e) {
+    console.debug('[JobTracker] SiYuan connection check failed:', e.message);
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════
+// PERSISTENCE — SiYuan block attributes
+// Custom attributes must be prefixed with "custom-"
+// SiYuan HTML-encodes attribute values, so we base64-encode JSON
+// to stay within safe characters.
+// ══════════════════════════════════════════════
+function encodeData(arr) {
+  // JSON → UTF-8 bytes → base64
+  return btoa(unescape(encodeURIComponent(JSON.stringify(arr))));
+}
+
+function decodeData(str) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(str))));
+  } catch (e) {
+    console.debug('[JobTracker] decodeData failed, trying plain JSON:', e.message);
+    try { return JSON.parse(str); } catch { return null; }
+  }
+}
+
+async function saveToBlock(data) {
+  if (!hostBlockId) {
+    console.debug('[JobTracker] saveToBlock: no hostBlockId, skipping');
+    return false;
+  }
+  console.debug('[JobTracker] saveToBlock → id:', hostBlockId, '| jobs:', data.length);
+  await syPost('/api/attr/setBlockAttrs', {
+    id: hostBlockId,
+    attrs: {
+      [ATTR_KEY]: encodeData(data),
+      [`${ATTR_KEY}-count`]: String(data.length),
+      [`${ATTR_KEY}-updated`]: new Date().toISOString()
+    }
+  });
+  console.debug('[JobTracker] saveToBlock OK');
+  return true;
+}
+
+async function loadFromBlock() {
+  if (!hostBlockId) return null;
+  console.debug('[JobTracker] loadFromBlock → id:', hostBlockId);
+  try {
+    const attrs = await syPost('/api/attr/getBlockAttrs', { id: hostBlockId });
+    const raw = attrs[ATTR_KEY];
+    if (raw) {
+      const decoded = decodeData(raw);
+      console.debug('[JobTracker] loadFromBlock OK, jobs:', decoded?.length);
+      return decoded;
+    }
+  } catch (e) {
+    console.debug('[JobTracker] loadFromBlock error:', e.message);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════
+// LOCAL STORAGE FALLBACK
+// ══════════════════════════════════════════════
+const LS_KEY = 'siyuan-job-tracker-v1';
+
+function saveLS(data) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+    console.debug('[JobTracker] saveLS OK, jobs:', data.length);
+  } catch (e) {
+    console.debug('[JobTracker] saveLS error:', e.message);
+  }
+}
+
+function loadLS() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { console.debug('[JobTracker] loadLS OK'); return JSON.parse(raw); }
+  } catch (e) {
+    console.debug('[JobTracker] loadLS error:', e.message);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════
+// UNIFIED SAVE / LOAD
+// ══════════════════════════════════════════════
+async function save() {
+  saveLS(jobs);               // always write localStorage — instant and free
+  if (hostBlockId) {
+    try { await saveToBlock(jobs); }
+    catch (e) { console.debug('[JobTracker] block save failed, localStorage only:', e.message); }
+  }
+}
+
+async function load() {
+  const fromBlock = await loadFromBlock();
+  if (fromBlock) { jobs = fromBlock; return; }
+  const fromLS = loadLS();
+  if (fromLS) { jobs = fromLS; return; }
+  jobs = DEMO;
+  console.debug('[JobTracker] using demo data');
+}
+
+// ══════════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════════
+const DEMO = [
+  { id: uid(), company: 'Stripe',  role: 'Software Engineer',  location: 'Remote',       salary: '$180k–$220k', status: 'interview', priority: 'high',   applied_date: '2026-03-01', followup: '2026-03-22', url: '', tags: ['fintech','backend'],   notes: 'Phone screen done. Onsite next week.' },
+  { id: uid(), company: 'Linear',  role: 'Frontend Engineer',  location: 'SF / Remote',  salary: '$155k–$190k', status: 'applied',   priority: 'high',   applied_date: '2026-03-05', followup: '',          url: '', tags: ['startup','react'],      notes: '' },
+  { id: uid(), company: 'CERN',    role: 'Software Developer', location: 'Geneva',       salary: '€90k',        status: 'offer',     priority: 'high',   applied_date: '2026-02-10', followup: '2026-03-25', url: '', tags: ['hep','cpp','physics'],  notes: 'Offer received! Reviewing contract.' },
+  { id: uid(), company: 'Vercel',  role: 'DX Engineer',        location: 'Remote',       salary: '$160k',       status: 'applied',   priority: 'medium', applied_date: '2026-03-08', followup: '',          url: '', tags: ['infra','dx'],           notes: 'Applied via referral.' },
+  { id: uid(), company: 'Figma',   role: 'Staff Engineer',     location: 'San Francisco',salary: '$220k+',      status: 'rejected',  priority: 'medium', applied_date: '2026-02-20', followup: '',          url: '', tags: ['design','tools'],       notes: 'Good experience, got to final round.' },
+];
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+function initials(name) {
+  return (name || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${m}/${day}/${y.slice(2)}`;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderLeftColor = { ok: 'var(--green)', err: 'var(--red)', warn: 'var(--amber)' }[type] || 'var(--green)';
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function filteredSorted() {
+  const q    = document.getElementById('search').value.toLowerCase();
+  const fSt  = document.getElementById('f-status').value;
+  const fPr  = document.getElementById('f-priority').value;
+
+  return jobs
+    .filter(j => {
+      if (fSt && j.status   !== fSt) return false;
+      if (fPr && j.priority !== fPr) return false;
+      if (q && !`${j.company} ${j.role} ${(j.tags||[]).join(' ')} ${j.notes}`.toLowerCase().includes(q)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const va = (a[sortCol] || ''), vb = (b[sortCol] || '');
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ?  1 : -1;
+      return 0;
+    });
+}
+
+function renderStats() {
+  document.getElementById('st-total').textContent     = jobs.length;
+  document.getElementById('st-applied').textContent   = jobs.filter(j => j.status === 'applied').length;
+  document.getElementById('st-interview').textContent = jobs.filter(j => j.status === 'interview').length;
+  document.getElementById('st-offer').textContent     = jobs.filter(j => j.status === 'offer').length;
+  document.getElementById('st-rejected').textContent  = jobs.filter(j => j.status === 'rejected').length;
+}
+
+function renderTable() {
+  const rows = filteredSorted();
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(j => {
+    const tags = (j.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+    const prioClass = { high: 'p-high', medium: 'p-medium', low: 'p-low' }[j.priority] || 'p-low';
+    return `
+    <tr data-id="${esc(j.id)}">
+      <td>
+        <div class="co-cell">
+          <div class="co-logo">${esc(initials(j.company))}</div>
+          <div>
+            <div class="co-name">${esc(j.company)}</div>
+            <div class="co-loc">${esc(j.location || '')}</div>
+          </div>
+        </div>
+      </td>
+      <td style="color:var(--text)">${esc(j.role)}</td>
+      <td><span class="badge badge-${esc(j.status)}">${esc(j.status)}</span></td>
+      <td><span class="prio-dot ${prioClass}"></span><span style="font-size:12px;color:var(--muted);text-transform:capitalize">${esc(j.priority)}</span></td>
+      <td style="color:var(--muted);font-family:var(--font-mono);font-size:11.5px">${fmtDate(j.applied_date)}</td>
+      <td><div class="tags">${tags}</div></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" data-edit="${esc(j.id)}">Edit</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:4px" data-del="${esc(j.id)}">&#215;</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Event delegation on tbody
+  tbody.querySelectorAll('[data-edit]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); openModal(b.dataset.edit); }));
+  tbody.querySelectorAll('[data-del]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); deleteJob(b.dataset.del); }));
+  tbody.querySelectorAll('tr').forEach(tr =>
+    tr.addEventListener('click', e => {
+      if (e.target.closest('[data-edit],[data-del]')) return;
+      openModal(tr.dataset.id);
+    }));
+}
+
+function render() {
+  renderStats();
+  renderTable();
+}
+
+// ══════════════════════════════════════════════
+// SORT HEADERS
+// ══════════════════════════════════════════════
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    document.querySelectorAll('th').forEach(t => t.classList.remove('sorted'));
+    sortAsc = (sortCol === th.dataset.col) ? !sortAsc : true;
+    sortCol = th.dataset.col;
+    th.classList.add('sorted');
+    th.querySelector('.arrow').textContent = sortAsc ? '↑' : '↓';
+    renderTable();
+  });
+});
+
+// ══════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════
+function openModal(id = null) {
+  editingId = id;
+  const j = id ? jobs.find(x => x.id === id) : null;
+  document.getElementById('modal-title').textContent = id ? 'Edit Application' : 'Add Application';
+  document.getElementById('f-company').value   = j?.company     || '';
+  document.getElementById('f-role').value      = j?.role        || '';
+  document.getElementById('f-loc').value       = j?.location    || '';
+  document.getElementById('f-salary').value    = j?.salary      || '';
+  document.getElementById('f-m-status').value  = j?.status      || 'applied';
+  document.getElementById('f-m-priority').value= j?.priority    || 'medium';
+  document.getElementById('f-date').value      = j?.applied_date|| '';
+  document.getElementById('f-followup').value  = j?.followup    || '';
+  document.getElementById('f-url').value       = j?.url         || '';
+  document.getElementById('f-tags').value      = (j?.tags || []).join(', ');
+  document.getElementById('f-notes').value     = j?.notes       || '';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-company').focus(), 80);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+
+document.getElementById('btn-add').addEventListener('click', () => openModal());
+document.getElementById('btn-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const company = document.getElementById('f-company').value.trim();
+  const role    = document.getElementById('f-role').value.trim();
+  if (!company || !role) { toast('Company and Role are required', 'err'); return; }
+
+  const tags = document.getElementById('f-tags').value
+    .split(',').map(t => t.trim()).filter(Boolean);
+
+  const entry = {
+    id:           editingId || uid(),
+    company, role,
+    location:     document.getElementById('f-loc').value.trim(),
+    salary:       document.getElementById('f-salary').value.trim(),
+    status:       document.getElementById('f-m-status').value,
+    priority:     document.getElementById('f-m-priority').value,
+    applied_date: document.getElementById('f-date').value,
+    followup:     document.getElementById('f-followup').value,
+    url:          document.getElementById('f-url').value.trim(),
+    tags,
+    notes:        document.getElementById('f-notes').value.trim()
+  };
+
+  console.debug('[JobTracker] saving entry:', entry.id, entry.company);
+
+  if (editingId) {
+    const idx = jobs.findIndex(j => j.id === editingId);
+    if (idx !== -1) jobs[idx] = entry;
+  } else {
+    jobs.unshift(entry);
+  }
+
+  closeModal();
+  render();
+  await save();
+  toast(editingId ? 'Application updated' : 'Application added ✓');
+});
+
+// ══════════════════════════════════════════════
+// DELETE
+// ══════════════════════════════════════════════
+async function deleteJob(id) {
+  if (!confirm('Remove this application?')) return;
+  console.debug('[JobTracker] deleting:', id);
+  jobs = jobs.filter(j => j.id !== id);
+  render();
+  await save();
+  toast('Removed', 'warn');
+}
+
+// ══════════════════════════════════════════════
+// SEARCH / FILTER
+// ══════════════════════════════════════════════
+document.getElementById('search').addEventListener('input', renderTable);
+document.getElementById('f-status').addEventListener('change', renderTable);
+document.getElementById('f-priority').addEventListener('change', renderTable);
+
+// ══════════════════════════════════════════════
+// CSV EXPORT
+// ══════════════════════════════════════════════
+document.getElementById('btn-export').addEventListener('click', () => {
+  const cols = ['company','role','location','salary','status','priority','applied_date','followup','url','tags','notes'];
+  const csv = [
+    cols.join(','),
+    ...jobs.map(j => cols.map(c => JSON.stringify(
+      Array.isArray(j[c]) ? j[c].join(';') : (j[c] || '')
+    )).join(','))
+  ].join('\n');
+
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
+    download: `job-tracker-${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+  console.debug('[JobTracker] CSV exported');
+  toast('CSV exported');
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+(async () => {
+  // 1. Discover host block ID (same-origin iframe walk)
+  hostBlockId = discoverBlockId();
+
+  if (hostBlockId) {
+    document.getElementById('sys-blockid').textContent = hostBlockId;
+  }
+
+  // 2. Check SiYuan API reachability
+  const connected = await checkConnection();
+
+  if (connected && hostBlockId) {
+    document.getElementById('sys-dot').className = 'ok';
+    document.getElementById('sys-msg').textContent = 'SiYuan connected — data persisted in block attributes';
+  } else if (connected && !hostBlockId) {
+    document.getElementById('sys-dot').className = 'err';
+    document.getElementById('sys-msg').textContent = 'SiYuan connected but block ID unknown — using localStorage';
+  } else {
+    document.getElementById('sys-dot').className = 'err';
+    document.getElementById('sys-msg').textContent = 'SiYuan offline — using localStorage';
+  }
+
+  // 3. Load data
+  await load();
+
+  // 4. Render
+  render();
+
+  console.debug('[JobTracker] ready, jobs:', jobs.length, '| blockId:', hostBlockId);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "job-tracker",
+  "author": "melashri",
+  "url": "https://github.com/melashri/job-tracker-widget",
+  "version": "0.1.0",
+  "minAppVersion": "2.8.8",
+  "displayName": {
+    "default": "Job Tracker",
+    "zh_CN": "求职追踪"
+  },
+  "description": {
+    "default": "Track job applications with status, priority, notes, and tags. Data is persisted via SiYuan block attributes on the widget block itself.",
+    "zh_CN": "追踪求职申请，含状态、优先级、备注和标签，数据持久化到挂件块属性中。"
+  },
+  "readme": {
+    "default": "README.md"
+  },
+  "funding": {
+    "openCollective": "",
+    "patreon": "",
+    "github": "melashri",
+    "custom": []
+  },
+  "keywords": [
+    "job", "tracker", "career", "applications", "kanban"
+  ]
+}
