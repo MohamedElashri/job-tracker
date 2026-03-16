@@ -1,7 +1,7 @@
 {
   "name": "job-tracker",
-  "author": "melashri",
-  "url": "https://github.com/melashri/job-tracker-widget",
+  "author": "MohamedElashri",
+  "url": "https://github.com/MohamedElashri/job-tracker",
   "version": "0.1.0",
   "minAppVersion": "2.8.8",
   "displayName": {
@@ -18,7 +18,7 @@
   "funding": {
     "openCollective": "",
     "patreon": "",
-    "github": "melashri",
+    "github": "MohamedElashri",
     "custom": []
   },
   "keywords": [
